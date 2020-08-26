@@ -399,7 +399,13 @@ namespace SIPSorcery.SIP.App
                 MediaSession = mediaSession;
                 MediaSession.OnRtpEvent += OnRemoteRtpEvent;
 
-                var sdpAnnounceAddress = NetServices.GetLocalAddressForRemote(serverEndPoint.Address);
+                IPAddress sdpAnnounceAddress;
+
+                if (string.IsNullOrEmpty(m_transport.ContactHost) ||
+                    !IPAddress.TryParse(m_transport.ContactHost, out sdpAnnounceAddress))
+                {
+                    sdpAnnounceAddress = NetServices.GetLocalAddressForRemote(serverEndPoint.Address);
+                }
 
                 var sdp = mediaSession.CreateOffer(sdpAnnounceAddress);
                 if (sdp == null)
@@ -562,14 +568,22 @@ namespace SIPSorcery.SIP.App
                     }
                     else
                     {
-                        var sdpAnswer = MediaSession.CreateAnswer(null);
+                        IPAddress.TryParse(m_transport.ContactHost, out var sdpAnnounceAddress);
+                        
+                        var sdpAnswer = MediaSession.CreateAnswer(sdpAnnounceAddress);
                         sdp = sdpAnswer.ToString();
                     }
                 }
                 else
                 {
                     // No SDP offer was included in the INVITE request need to wait for the ACK.
-                    var sdpAnnounceAddress = NetServices.GetLocalAddressForRemote(sipRequest.RemoteSIPEndPoint.GetIPEndPoint().Address);
+                    IPAddress sdpAnnounceAddress;
+
+                    if (string.IsNullOrEmpty(m_transport.ContactHost) ||
+                        !IPAddress.TryParse(m_transport.ContactHost, out sdpAnnounceAddress))
+                    {
+                        sdpAnnounceAddress = NetServices.GetLocalAddressForRemote(sipRequest.RemoteSIPEndPoint.GetIPEndPoint().Address);
+                    }
                     var sdpOffer = MediaSession.CreateOffer(sdpAnnounceAddress);
                     sdp = sdpOffer.ToString();
                 }
